@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 142 76% 98%;
+    --foreground: 142 10% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 142 10% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 10% 4.9%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 142 10% 98%;
+    --secondary: 142 30% 96.1%;
+    --secondary-foreground: 142 10% 11.2%;
+    --muted: 142 30% 96.1%;
+    --muted-foreground: 142 5% 46.9%;
+    --accent: 142 30% 96.1%;
+    --accent-foreground: 142 10% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 142 10% 98%;
+    --border: 142 20% 91.4%;
+    --input: 142 20% 91.4%;
+    --ring: 142 70% 45%;
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 142 10% 4.9%;
+    --foreground: 142 10% 98%;
+    --card: 142 10% 4.9%;
+    --card-foreground: 142 10% 98%;
+    --popover: 142 10% 4.9%;
+    --popover-foreground: 142 10% 98%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 142 10% 98%;
+    --secondary: 142 30% 17.5%;
+    --secondary-foreground: 142 10% 98%;
+    --muted: 142 30% 17.5%;
+    --muted-foreground: 142 5% 65.1%;
+    --accent: 142 30% 17.5%;
+    --accent-foreground: 142 10% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 142 10% 98%;
+    --border: 142 30% 17.5%;
+    --input: 142 30% 17.5%;
+    --ring: 142 70% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.glass-effect {
+  @apply bg-white/80 backdrop-blur-sm dark:bg-black/80;
+}
+
+.brand-gradient {
+  @apply bg-gradient-to-r from-brand-500 to-brand-600;
+}
+
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-105;
+}
