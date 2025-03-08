@@ -18,9 +18,9 @@ export const getUnionInfo = () => {
 };
 
 // Description: Get union votes
-// Endpoint: GET /api/unions/votes
+// Endpoint: GET /api/unions/:id/votes
 // Response: { votes: Array<{ _id: string, title: string, description: string, deadline: string, votesFor: number, votesAgainst: number, status: 'active' | 'completed' }> }
-export const getUnionVotes = () => {
+export const getUnionVotes = (unionId: string) => {
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve({
@@ -51,7 +51,7 @@ export const getUnionVotes = () => {
 
 // Description: Submit a vote
 // Endpoint: POST /api/unions/votes/:id/submit
-// Request: { voteId: string, vote: 'for' | 'against' }
+// Request: { vote: 'for' | 'against' }
 // Response: { success: boolean, message: string }
 export const submitVote = (voteId: string, vote: 'for' | 'against') => {
   return new Promise((resolve) => {

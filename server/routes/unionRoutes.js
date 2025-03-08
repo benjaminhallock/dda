@@ -1,6 +1,6 @@
 const express = require('express');
 const { requireUser } = require('./middleware/auth.js');
-const { Union, Forum, Topic } = require('../models/models.js');
+const { Union, Forum, Topic, Vote } = require('../models/models.js');
 const router = express.Router();
 
 // Get all unions
@@ -329,6 +329,68 @@ router.post('/topics/:topicId/reply', requireUser, async (req, res) => {
   } catch (error) {
     console.error('Error adding reply:', error);
     res.status(500).json({ error: 'Failed to add reply' });
+  }
+});
+
+// Get union votes
+router.get('/:id/votes', requireUser, async (req, res) => {
+  try {
+    const union = await Union.findById(req.params.id);
+    
+    if (!union) {
+      return res.status(404).json({ error: 'Union not found' });
+    }
+    
+    // Check if user is a member
+    if (!union.members.includes(req.user._id)) {
+      return res.status(403).json({ error: 'Not a member of this union' });
+    }
+    
+    const votes = await Vote.find({ union: req.params.id })
+      .sort({ createdAt: -1 });
+    
+    res.status(200).json({ votes });
+  } catch (error) {
+    console.error('Error fetching union votes:', error);
+    res.status(500).json({ error: 'Failed to fetch votes' });
+  }
+});
+
+// Submit a vote
+router.post('/votes/:id/submit', requireUser, async (req, res) => {
+  try {
+    const { vote } = req.body;
+    
+    const voteRecord = await Vote.findById(req.params.id);
+    
+    if (!voteRecord) {
+      return res.status(404).json({ error: 'Vote not found' });
+    }
+    
+    // Check if user is a member of the union
+    const union = await Union.findById(voteRecord.union);
+    if (!union.members.includes(req.user._id)) {
+      return res.status(403).json({ error: 'Not a member of this union' });
+    }
+    
+    // Update vote counts
+    if (vote === 'for') {
+      voteRecord.votesFor += 1;
+    } else if (vote === 'against') {
+      voteRecord.votesAgainst += 1;
+    } else {
+      return res.status(400).json({ error: 'Invalid vote' });
+    }
+    
+    await voteRecord.save();
+    
+    res.status(200).json({
+      success: true,
+      message: 'Vote submitted successfully'
+    });
+  } catch (error) {
+    console.error('Error submitting vote:', error);
+    res.status(500).json({ error: 'Failed to submit vote' });
   }
 });
 

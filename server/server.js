@@ -14,7 +14,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const app = express();
-const port = process.env.PORT || 3000;
+let port = process.env.PORT || 3000;
 
 // Enable JSON spaces and strict routing
 app.enable('json spaces');
@@ -72,8 +72,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use. Trying another port...`);
+    port = parseInt(port) + 1;
+    server.listen(port);
+  } else {
+    console.error(err);
+  }
 });
 
 // Handle process termination

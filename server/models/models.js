@@ -140,7 +140,7 @@ const walletSchema = new Schema({
     usd: { type: Number, default: 0 }
   },
   isConnected: { type: Boolean, default: false }
-});
+}); 
 
 // Job Schema
 const jobSchema = new Schema({

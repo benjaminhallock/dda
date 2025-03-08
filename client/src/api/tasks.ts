@@ -19,12 +19,14 @@ export const getTasks = () => {
 
 // Description: Submit completed task
 // Endpoint: POST /api/tasks/:id/complete
-// Request: { taskId: string }
-// Response: { success: boolean, earnings: number }
+// Response: { success: boolean, message: string }
 export const completeTask = (taskId: string) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve({ success: true, earnings: 150 });
+      resolve({
+        success: true,
+        message: "Task completed successfully"
+      });
     }, 500);
   });
 };

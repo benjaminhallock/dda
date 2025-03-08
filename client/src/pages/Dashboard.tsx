@@ -1,12 +1,24 @@
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { useEffect, useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
 import { getTasks } from "@/api/tasks";
 import { getEarningsStats } from "@/api/earnings";
 import { getLocalStatistics, getOnboardingProgress } from "@/api/statistics";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
-import { DollarSign, TrendingUp, Users, Clock, CheckCircle, AlertTriangle, Circle } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, CheckCircle, AlertTriangle, Circle, PlusCircle } from "lucide-react";
+import { DashboardWidget } from "@/components/DashboardWidget";
+import { useToast } from "@/hooks/useToast";
+import { AnimatePresence, motion } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
+
+// Define widget types
+type WidgetType = "earnings" | "tasks" | "onboarding" | "localStats" | "help";
+
+interface Widget {
+  id: string;
+  type: WidgetType;
+  title: string;
+  position?: { x: number; y: number };
+}
 
 export function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -14,6 +26,26 @@ export function Dashboard() {
   const [localStats, setLocalStats] = useState(null);
   const [onboarding, setOnboarding] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  
+  // State for widgets
+  const [widgets, setWidgets] = useState<Widget[]>([
+    { id: "earnings-1", type: "earnings", title: "Earnings Overview" },
+    { id: "tasks-1", type: "tasks", title: "Recent Tasks" },
+    { id: "onboarding-1", type: "onboarding", title: "Onboarding Progress" },
+  ]);
+
+  const [availableWidgets, setAvailableWidgets] = useState<{
+    type: WidgetType;
+    title: string;
+  }[]>([
+    { type: "earnings", title: "Earnings Overview" },
+    { type: "tasks", title: "Recent Tasks" },
+    { type: "onboarding", title: "Onboarding Progress" },
+    { type: "localStats", title: "Local Statistics" },
+    { type: "help", title: "Help & Resources" },
+  ]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,35 +69,110 @@ export function Dashboard() {
     fetchData();
   }, []);
 
+  const handleWidgetRemove = (id: string) => {
+    setWidgets((current) => current.filter((widget) => widget.id !== id));
+    toast({
+      title: "Widget removed",
+      description: "You can add it back from the widget library",
+    });
+  };
+
+  const handleWidgetAdd = (type: WidgetType, title: string) => {
+    const newId = `${type}-${Date.now()}`;
+    setWidgets((current) => [
+      ...current,
+      { id: newId, type, title }
+    ]);
+    toast({
+      title: "Widget added",
+      description: `Added ${title} to your dashboard`,
+    });
+  };
+
+  const handlePositionChange = (id: string, position: { x: number; y: number }) => {
+    setWidgets(current => 
+      current.map(widget => 
+        widget.id === id ? { ...widget, position } : widget
+      )
+    );
+  };
+  
   if (loading) {
-    return <div className="flex items-center justify-center h-full">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-full p-8">
+        <div className="space-y-4 text-center">
+          <motion.div
+            className="h-12 w-12 rounded-full border-4 border-t-primary"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
+          <p className="text-sm text-muted-foreground">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
-  const chartData = stats?.weeklyEarnings.map((earning, index) => ({
-    name: format(new Date().setDate(new Date().getDate() - (6 - index)), 'MMM dd'),
-    amount: earning
-  }));
-
-  return (
-    <div className="space-y-6">
-      {onboarding && onboarding.completed < onboarding.total && (
-        <Card className="border-primary bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Getting Started
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p>Completed {onboarding.completed} of {onboarding.total} sign-on tasks</p>
-              <span className="text-sm font-medium">
-                {Math.round((onboarding.completed / onboarding.total) * 100)}%
-              </span>
+  const renderWidgetContent = (widget: Widget) => {
+    switch (widget.type) {
+      case "earnings":
+        return stats ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-10 w-10 text-green-500 bg-green-50 p-2 rounded-full" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Earnings</p>
+                  <p className="text-2xl font-bold">${stats.totalEarnings}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-10 w-10 text-blue-500 bg-blue-50 p-2 rounded-full" />
+                <div>
+                  <p className="text-sm text-muted-foreground">This Month</p>
+                  <p className="text-2xl font-bold">${stats.monthlyEarnings}</p>
+                </div>
+              </div>
             </div>
+          </div>
+        ) : null;
+
+      case "tasks":
+        return tasks.length > 0 ? (
+          <div className="space-y-4">
+            <ul className="space-y-2">
+              {tasks.slice(0, 4).map((task: any) => (
+                <li 
+                  key={task._id} 
+                  className="flex items-center justify-between p-2 rounded-md border"
+                >
+                  <div className="flex items-center gap-2">
+                    {task.status === 'completed' ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : task.status === 'overdue' ? (
+                      <AlertTriangle className="h-4 w-4 text-red-500" />
+                    ) : (
+                      <Clock className="h-4 w-4 text-blue-500" />
+                    )}
+                    <span className={task.status === 'completed' ? 'line-through text-muted-foreground' : ''}>{task.title}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{format(new Date(task.dueDate), 'MMM d')}</span>
+                </li>
+              ))}
+            </ul>
+            {tasks.length > 4 && (
+              <Button className="w-full" variant="outline" size="sm">
+                View All Tasks
+              </Button>
+            )}
+          </div>
+        ) : <p className="text-muted-foreground">No tasks found</p>;
+
+      case "onboarding":
+        return onboarding ? (
+          <div className="space-y-4">
             <Progress value={(onboarding.completed / onboarding.total) * 100} />
             <div className="grid gap-2">
-              {onboarding.tasks.map(task => (
+              {onboarding.tasks.slice(0, 3).map((task: any) => (
                 <div key={task._id} className="flex items-center gap-2">
                   {task.completed ? (
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -78,105 +185,90 @@ export function Dashboard() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        ) : null;
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats?.totalEarnings}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Average</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats?.monthlyAverage}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Tasks</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {tasks.filter(task => task.status === 'pending').length}
+      case "localStats":
+        return localStats ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Active Users</p>
+                <p className="text-2xl font-bold">{localStats.activeUsers}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Tasks Completed</p>
+                <p className="text-2xl font-bold">{localStats.completedTasks}</p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Local Workers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {localStats.localWorkers}/{localStats.totalWorkers}
+          </div>
+        ) : null;
+
+      case "help":
+        return (
+          <div className="space-y-4">
+            <div className="rounded-lg border p-3">
+              <h3 className="font-medium mb-1">Getting Started</h3>
+              <p className="text-sm text-muted-foreground">Complete your profile and explore the marketplace to get started.</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="rounded-lg border p-3">
+              <h3 className="font-medium mb-1">Need Help?</h3>
+              <p className="text-sm text-muted-foreground">Contact support or visit our help center for assistance.</p>
+            </div>
+            <Button variant="outline" className="w-full">Visit Help Center</Button>
+          </div>
+        );
+
+      default:
+        return <p>Unknown widget type</p>;
+    }
+  };
+
+  return (
+    <div className="space-y-6" ref={dashboardRef}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back! Here's an overview of your activity.
+          </p>
+        </div>
+        <div className="relative group">
+          <Button className="gap-2">
+            <PlusCircle className="h-4 w-4" />
+            Add Widget
+          </Button>
+          <div className="absolute right-0 mt-2 w-56 p-2 bg-card rounded-md shadow-lg border hidden group-hover:block z-20">
+            <p className="text-xs text-muted-foreground mb-2">Available Widgets</p>
+            {availableWidgets.map((widget) => (
+              <button
+                key={widget.type}
+                className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-accent"
+                onClick={() => handleWidgetAdd(widget.type, widget.title)}
+              >
+                {widget.title}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Weekly Earnings</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Area
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="#2563eb"
-                    fill="#3b82f6"
-                    fillOpacity={0.2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Local Area Statistics</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Employment Rate</p>
-              <div className="flex items-center justify-between">
-                <Progress value={localStats.employmentRate} className="w-4/5" />
-                <span className="text-sm font-medium">{localStats.employmentRate}%</span>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Your Income vs Average</p>
-              <div className="flex items-center gap-2">
-                <Progress
-                  value={(localStats.userIncome / localStats.averageIncome) * 100}
-                  className="w-4/5"
-                />
-                <span className="text-sm font-medium">
-                  ${localStats.userIncome} / ${localStats.averageIncome}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Widget Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <AnimatePresence>
+          {widgets.map((widget) => (
+            <DashboardWidget
+              key={widget.id}
+              id={widget.id}
+              title={widget.title}
+              onRemove={handleWidgetRemove}
+              onPositionChange={handlePositionChange}
+              className="min-h-[180px] md:min-h-[220px]"
+            >
+              {renderWidgetContent(widget)}
+            </DashboardWidget>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { Home, ClipboardList, LineChart, Settings, Wallet, Mail, Menu, Users, MessageSquare, Briefcase, Database, Heart } from "lucide-react";
+import { Home, ClipboardList, LineChart, Settings, Wallet, Mail, Menu, Users, MessageSquare, Briefcase, Database, Heart, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "react-router-dom";
@@ -16,6 +16,7 @@ export function Sidebar() {
     { name: 'Union', href: '/union', icon: Users },
     { name: 'Data Monetization', href: '/data-monetization', icon: Database },
     { name: 'Wellness', href: '/wellness', icon: Heart },
+    { name: 'AI Chat', href: '/ai-chat', icon: BrainCircuit },
     { name: 'Discussions', href: '/discussions', icon: MessageSquare },
     { name: 'Wallet', href: '/wallet', icon: Wallet },
     { name: 'Inbox', href: '/inbox', icon: Mail },
